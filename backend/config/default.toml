@@ -1,0 +1,61 @@
+# OCR pipeline configuration.
+# Every key is optional; anything left out falls back to the defaults in
+# src/ocr_pipeline/config.py. Loaded automatically when the working directory is
+# backend/, or point OCR_PIPELINE_CONFIG at another file.
+
+[classifier]
+quality_threshold = 0.6          # below this, a page's text layer is re-OCRed (UI-adjustable)
+image_dominant_coverage = 0.6    # image covers >= 60% of the page ...
+image_dominant_max_chars = 200   # ... with < 200 visible chars -> treat as scanned
+ocr_layer_min_fraction = 0.8     # >= 80% invisible/GlyphLessFont text -> existing OCR layer
+min_words_for_dictionary = 5
+bad_char_penalty = 5.0
+max_bad_char_ratio = 0.1         # > 10% broken chars (U+FFFD etc.) -> always re-OCR
+use_ocr_model = true
+
+[classifier.weights]
+dictionary = 0.5
+clean_chars = 0.3
+image_text = 0.2
+
+[ocr]
+engine = "tesseract"
+tessdata_path = 'C:\Program Files\Tesseract-OCR\tessdata'
+language = "eng"
+dpi = 300
+remove_table_lines = true        # erase rulings from the OCR image only; Tesseract drops ruled cells
+line_min_length_pt = 40.0
+
+[extraction]
+include_headers = true           # page headers often hold doc numbers / dates
+include_footers = true
+table_format = "markdown"        # or "html" (keeps merged cells)
+
+# LLM extraction. API keys come from environment variables / backend/.env, never this file:
+#   ANTHROPIC_API_KEY, OPENAI_API_KEY
+[llm]
+provider = "anthropic"           # anthropic | openai | ollama (UI-selectable)
+max_retries = 1                  # retries after a validation failure, with the error fed back
+
+[llm.anthropic]
+model = "claude-opus-5-5"
+effort = "medium"                # low | medium | high | xhigh | max
+max_input_tokens = 150000        # larger documents are split into page groups
+max_output_tokens = 64000
+
+[llm.openai]
+model = "gpt-5"
+max_input_tokens = 100000
+max_output_tokens = 16000
+
+[llm.ollama]
+model = ""                       # set once a model is pulled, e.g. "qwen2.5:7b"
+base_url = "http://localhost:11434"
+num_ctx = 16384                  # Ollama truncates silently beyond this
+max_input_tokens = 10000
+max_output_tokens = 4096
+
+# Verification of the page/quote the LLM gives for each value.
+[linking]
+fuzzy_threshold = 0.85           # min similarity for a non-exact quote match (OCR noise)
+search_other_pages = true        # look for a quote on other pages if not on the cited one

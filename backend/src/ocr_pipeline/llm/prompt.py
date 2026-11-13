@@ -1,0 +1,70 @@
+"""Prompt text for LLM extraction."""
+
+from __future__ import annotations
+
+from ocr_pipeline.models.document import PageContent
+
+SYSTEM_PROMPT = """\
+You extract data from business documents. The document text was produced by PDF \
+text extraction or OCR and is given as Markdown, one <page> element per page. \
+Tables appear as Markdown or HTML tables.
+
+Rules:
+- Use only information written in the document. Do not guess or fill in values \
+that are not there; use null (or an empty list) when a value is absent.
+- Copy values as written. Only reformat when the schema requires a type: numbers \
+without currency symbols or thousands separators, dates as YYYY-MM-DD when the \
+field is a date.
+- OCR text can contain recognition errors. Correct an obvious character error only \
+when the intended value is unambiguous from context.
+- For every non-null value, add an entry to "sources": "field" is the value's JSON \
+path inside "data" (for example invoice_number or line_items[2].amount), "page" is \
+the page number it came from, and "quote" is a short excerpt copied exactly from \
+that page's text that contains the value.
+"""
+
+
+def render_pages(pages: list[PageContent]) -> str:
+    parts = [
+        f'<page number="{p.page_number}">\n{p.markdown.strip()}\n</page>'
+        for p in pages
+        if p.markdown.strip()
+    ]
+    return "<document>\n" + "\n".join(parts) + "\n</document>"
+
+
+def user_prompt(
+    pages: list[PageContent],
+    instructions: str | None,
+    chunk_index: int,
+    chunk_count: int,
+    free_form: bool,
+) -> str:
+    sections: list[str] = []
+    if chunk_count > 1:
+        first, last = pages[0].page_number, pages[-1].page_number
+        sections.append(
+            f"This is part {chunk_index + 1} of {chunk_count} of a longer document "
+            f"(pages {first}-{last}). Extract only what appears in these pages; the other "
+            "parts are processed separately and merged afterwards."
+        )
+    if instructions:
+        sections.append(f"<instructions>\n{instructions.strip()}\n</instructions>")
+    if free_form:
+        sections.append(
+            "Return each value the instructions ask for as an entry in data.fields, with a "
+            'short snake_case name. In "sources", use that name as the "field".'
+        )
+    else:
+        sections.append("Fill the fields of the response schema from the document.")
+    sections.append(render_pages(pages))
+    return "\n\n".join(sections)
+
+
+def retry_prompt(previous_output: str, error: str) -> str:
+    return (
+        "\n\nYour previous answer did not pass validation.\n"
+        f"<previous_answer>\n{previous_output}\n</previous_answer>\n"
+        f"<validation_error>\n{error}\n</validation_error>\n"
+        "Answer again, fixing these errors."
+    )

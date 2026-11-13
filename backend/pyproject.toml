@@ -1,0 +1,33 @@
+[project]
+name = "ocr-pipeline"
+version = "0.1.0"
+description = "PDF extraction pipeline: digital/scanned classification, OCR, and LLM field extraction"
+readme = "README.md"
+authors = [
+    { name = "veerabrahmam05", email = "veerabrahmamaluri@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "anthropic>=2.8.0",
+    "jsonschema>=4.26.0",
+    "ollama>=0.6.3",
+    "openai>=3.50.0",
+    "pydantic>=2.14.3",
+    "pymupdf>=2.1",
+    "pymupdf4llm>=2.1,<2.2", # classifier uses internal OCR-decision API; upgrade deliberately
+    "pyspellchecker>=0.9.1",
+    "python-dotenv>=1.2.4",
+    "rapidfuzz>=3.14.6",
+]
+
+[build-system]
+requires = ["uv_build>=0.9.6,<0.10.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
