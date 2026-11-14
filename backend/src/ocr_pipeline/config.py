@@ -142,12 +142,26 @@ class LinkingSettings(BaseModel):
     search_other_pages: bool = True
 
 
+class ApiSettings(BaseModel):
+    """HTTP API options. Job results live in memory only and are lost on restart."""
+
+    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
+    max_upload_mb: float = Field(50, gt=0)
+    # Finished jobs beyond this are evicted, oldest first.
+    max_jobs: int = Field(100, ge=1)
+    # Concurrent jobs. PDF work is serialised by a lock (PyMuPDF is not thread-safe);
+    # LLM calls overlap.
+    workers: int = Field(2, ge=1, le=16)
+    page_image_max_dpi: int = Field(200, ge=36, le=600)
+
+
 class Settings(BaseModel):
     classifier: ClassifierSettings = Field(default_factory=ClassifierSettings)
     ocr: OcrSettings = Field(default_factory=OcrSettings)
     extraction: ExtractionSettings = Field(default_factory=ExtractionSettings)
     llm: LLMSettings = Field(default_factory=LLMSettings)
     linking: LinkingSettings = Field(default_factory=LinkingSettings)
+    api: ApiSettings = Field(default_factory=ApiSettings)
 
 
 def load_settings(path: str | Path | None = None) -> Settings:

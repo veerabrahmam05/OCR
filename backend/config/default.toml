@@ -59,3 +59,11 @@ max_output_tokens = 4096
 [linking]
 fuzzy_threshold = 0.85           # min similarity for a non-exact quote match (OCR noise)
 search_other_pages = true        # look for a quote on other pages if not on the cited one
+
+# HTTP API (uv run uvicorn ocr_pipeline.api.app:app). Jobs are kept in memory only.
+[api]
+cors_origins = ["http://localhost:3000"]   # Next.js dev server
+max_upload_mb = 50
+max_jobs = 100                   # oldest finished jobs are evicted beyond this
+workers = 2                      # concurrent jobs; PDF steps still run one at a time
+page_image_max_dpi = 200

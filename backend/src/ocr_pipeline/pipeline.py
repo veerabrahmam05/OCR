@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pymupdf
@@ -27,24 +28,46 @@ def _open(source: str | Path | bytes) -> tuple[pymupdf.Document, str]:
     return doc, name
 
 
+StageCallback = Callable[[str], None]
+
+
+def read_pdf(
+    source: str | Path | bytes,
+    settings: Settings | None = None,
+    engine: OcrEngine | None = None,
+    on_stage: StageCallback | None = None,
+    keep_processed_pdf: bool = False,
+) -> tuple[ExtractedDocument, bytes | None]:
+    """Classify every page, OCR the ones that need it, and extract Markdown.
+
+    The source file is never modified; OCR happens on an in-memory copy. With
+    ``keep_processed_pdf`` that copy is returned too: it has the OCR text layer and
+    no page rotation, so rendering it matches every bbox in the result.
+    """
+    settings = settings or load_settings()
+    engine = engine or create_engine(settings.ocr)
+    stage = on_stage or (lambda _: None)
+
+    doc, name = _open(source)
+    with doc:
+        stage("classifying")
+        classifications = classify_document(doc, settings.classifier)
+        stage("extracting_text")
+        pages = extract_pages(doc, classifications, engine, settings.extraction)
+        document = ExtractedDocument(source=name, page_count=doc.page_count, pages=pages)
+        return document, (doc.tobytes(garbage=1) if keep_processed_pdf else None)
+
+
 def process_pdf(
     source: str | Path | bytes,
     settings: Settings | None = None,
     engine: OcrEngine | None = None,
 ) -> ExtractedDocument:
-    """Classify every page, OCR the ones that need it, and extract Markdown.
+    """Like :func:`read_pdf`, returning only the extracted document.
 
-    The source file is never modified; OCR happens on an in-memory copy.
     Pass ``engine`` to reuse one across many PDFs (batch processing).
     """
-    settings = settings or load_settings()
-    engine = engine or create_engine(settings.ocr)
-
-    doc, name = _open(source)
-    with doc:
-        classifications = classify_document(doc, settings.classifier)
-        pages = extract_pages(doc, classifications, engine, settings.extraction)
-        return ExtractedDocument(source=name, page_count=doc.page_count, pages=pages)
+    return read_pdf(source, settings, engine)[0]
 
 
 def extract_from_pdf(

@@ -9,6 +9,7 @@ authors = [
 requires-python = ">=3.13"
 dependencies = [
     "anthropic>=2.8.0",
+    "fastapi>=0.162.7",
     "jsonschema>=4.26.0",
     "ollama>=0.6.3",
     "openai>=3.50.0",
@@ -17,7 +18,9 @@ dependencies = [
     "pymupdf4llm>=2.1,<2.2", # classifier uses internal OCR-decision API; upgrade deliberately
     "pyspellchecker>=0.9.1",
     "python-dotenv>=1.2.4",
+    "python-multipart>=0.0.33",
     "rapidfuzz>=3.14.6",
+    "uvicorn[standard]>=0.54.0",
 ]
 
 [build-system]
@@ -26,6 +29,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "httpx>=0.28.1",
     "pytest>=9.2.0",
 ]
 
