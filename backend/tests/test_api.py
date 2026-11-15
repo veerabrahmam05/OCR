@@ -116,8 +116,8 @@ def test_invoice_job_end_to_end(api, invoice_pdf):
     r = submit(client, invoice_pdf, schema_name="invoice", instructions="Amounts in USD.")
     assert r.status_code == 202
     created = r.json()
-    # The worker may already have picked the job up by the time we get the response.
-    assert created["status"] in ("queued", "classifying") and created["filename"] == "invoice.pdf"
+    # The worker may already be at any stage by the time we get the response.
+    assert created["status"] != "failed" and created["filename"] == "invoice.pdf"
 
     job = wait(client, created["id"])
     assert job["status"] == "done", job["error"]

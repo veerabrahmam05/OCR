@@ -62,7 +62,7 @@ search_other_pages = true        # look for a quote on other pages if not on the
 
 # HTTP API (uv run uvicorn ocr_pipeline.api.app:app). Jobs are kept in memory only.
 [api]
-cors_origins = ["http://localhost:3000"]   # Next.js dev server
+cors_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]   # Next.js dev server
 max_upload_mb = 50
 max_jobs = 100                   # oldest finished jobs are evicted beyond this
 workers = 2                      # concurrent jobs; PDF steps still run one at a time

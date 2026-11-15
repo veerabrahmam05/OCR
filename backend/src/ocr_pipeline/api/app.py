@@ -11,16 +11,13 @@ from fastapi import FastAPI, File, Form, HTTPException, Query, Response, UploadF
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import ValidationError
 
-from ocr_pipeline.api.jobs import PDF_LOCK, JobManager, JobStatus, JobStoreFull, ProviderFactory
+from ocr_pipeline.api.jobs import PDF_LOCK, JobManager, JobStoreFull, ProviderFactory
 from ocr_pipeline.api.options import JobOptions
 from ocr_pipeline.api.views import JobDetail, JobSummary, ProviderInfo, SchemaInfo, SettingsView
 from ocr_pipeline.config import AnthropicSettings, ExtractionSettings, Settings, load_settings
 from ocr_pipeline.extract import OcrEngine
 from ocr_pipeline.llm import create_provider
 from ocr_pipeline.schemas import BUILTIN_SCHEMAS
-
-_TEXT_READY = (JobStatus.EXTRACTING_DATA, JobStatus.LINKING, JobStatus.DONE)
-
 
 def create_app(
     settings: Settings | None = None,
@@ -137,7 +134,8 @@ def create_app(
         Box coordinates are PDF points (1/72 inch): multiply by dpi/72 for pixels.
         """
         job = get_job(job_id)
-        if job.status not in _TEXT_READY or job.processed_pdf is None:
+        # Available once text extraction finished, even if the LLM step later failed.
+        if job.processed_pdf is None or job.document is None:
             raise HTTPException(status.HTTP_409_CONFLICT, f"page images not ready (status: {job.status})")
         if not 1 <= page_number <= job.document.page_count:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "page not found")

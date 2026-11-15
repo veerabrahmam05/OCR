@@ -97,6 +97,21 @@ def test_ocr_noise_gives_fuzzy_match():
     assert v.value_found is True  # fuzzy text match on the value too
 
 
+def test_table_row_spread_over_cells_gives_one_box():
+    # PyMuPDF reports each cell as its own line; the row should still be one box.
+    cells = ["Steel bolts", "200", "0.50", "100.00"]
+    words, x = [], 60.0
+    for line_id, cell in enumerate(cells):
+        for w in cell.split():
+            words.append(Word(text=w, bbox=(x, 140, x + 6 * len(w), 152), line=line_id))
+            x += 6 * len(w) + 40
+    doc = make_document(["|".join(cells)])
+    doc.pages[0].words = words
+    r = verify(doc, {"amount": 100.0}, ("amount", 1, "Steel bolts 200 0.50 100.00"))
+    (box,) = r.sources[0].verification.boxes
+    assert box[0] == 60.0 and box[2] == words[-1].bbox[2]
+
+
 def test_quote_spanning_lines_gives_one_box_per_line():
     doc = doc_with(INVOICE_PAGE)
     r = verify(doc, {"x": "INV-2026-0042"}, ("x", 1, "Invoice INV-2026-0042 Date: 12/11/2026"))

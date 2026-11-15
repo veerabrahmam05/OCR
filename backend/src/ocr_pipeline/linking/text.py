@@ -77,11 +77,26 @@ def matched_words(match: Match, page: PageIndex) -> list[Word]:
 
 
 def line_boxes(words: list[Word]) -> list[BBox]:
-    """One rectangle per text line covered by ``words``, top to bottom."""
+    """One rectangle per visual row covered by ``words``, top to bottom.
+
+    Text lines are merged when they sit on the same row (vertical overlap of at least
+    half the smaller height): PyMuPDF reports each table cell as its own line, and a
+    quoted table row should highlight as one box, not one per cell.
+    """
     lines: dict[int, list[float]] = {}
     for w in words:
         x0, y0, x1, y1 = w.bbox
         box = lines.setdefault(w.line, [x0, y0, x1, y1])
         box[0], box[1] = min(box[0], x0), min(box[1], y0)
         box[2], box[3] = max(box[2], x1), max(box[3], y1)
-    return sorted((tuple(b) for b in lines.values()), key=lambda b: (b[1], b[0]))
+
+    rows: list[list[float]] = []
+    for b in sorted(lines.values(), key=lambda b: (b[1], b[0])):
+        for r in rows:
+            overlap = min(r[3], b[3]) - max(r[1], b[1])
+            if overlap >= 0.5 * min(r[3] - r[1], b[3] - b[1]):
+                r[0], r[1], r[2], r[3] = min(r[0], b[0]), min(r[1], b[1]), max(r[2], b[2]), max(r[3], b[3])
+                break
+        else:
+            rows.append(list(b))
+    return sorted((tuple(r) for r in rows), key=lambda b: (b[1], b[0]))

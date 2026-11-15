@@ -145,7 +145,9 @@ class LinkingSettings(BaseModel):
 class ApiSettings(BaseModel):
     """HTTP API options. Job results live in memory only and are lost on restart."""
 
-    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
+    cors_origins: list[str] = Field(
+        default_factory=lambda: ["http://localhost:3000", "http://127.0.0.1:3000"]
+    )
     max_upload_mb: float = Field(50, gt=0)
     # Finished jobs beyond this are evicted, oldest first.
     max_jobs: int = Field(100, ge=1)
