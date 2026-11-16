@@ -112,6 +112,9 @@ class OllamaSettings(ProviderSettings):
     num_ctx: int = Field(16_384, ge=2_048)
     max_input_tokens: int = Field(10_000, ge=1_000)
     max_output_tokens: int = Field(4_096, ge=256)
+    # Reasoning before answering ("thinking" models such as qwen3.x). Off by default:
+    # on CPU it multiplies response time. None = leave it to the model's default.
+    think: bool | None = False
 
     @model_validator(mode="after")
     def _fits_context(self) -> OllamaSettings:

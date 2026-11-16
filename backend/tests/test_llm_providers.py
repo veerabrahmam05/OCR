@@ -137,8 +137,15 @@ def test_ollama_request_shape():
     response = OllamaProvider(settings, client=client).complete_json("sys", "user", SCHEMA)
     kw = client.kwargs
     assert kw["format"] == SCHEMA
-    assert kw["options"] == {"num_ctx": 16_384, "num_predict": 4_096, "temperature": 0}
+    assert kw["options"] == {"num_ctx": 16_384, "num_predict": 4_096, "temperature": 0, "presence_penalty": 0}
+    assert kw["think"] is False  # off by default
     assert response.output_tokens == 40
+
+
+def test_ollama_think_left_to_model_when_unset():
+    client = FakeOllama()
+    OllamaProvider(OllamaSettings(model="m", think=None), client=client).complete_json("s", "u", SCHEMA)
+    assert "think" not in client.kwargs
 
 
 def test_ollama_truncation():

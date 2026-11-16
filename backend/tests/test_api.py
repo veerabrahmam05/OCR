@@ -94,9 +94,8 @@ def test_health(api):
 def test_settings_for_the_ui(api):
     s = api[0].get("/settings").json()
     assert s["default_provider"] == "anthropic"
-    assert {p["name"]: p["configured"] for p in s["providers"]} == {
-        "anthropic": True, "openai": True, "ollama": False,
-    }  # fmt: skip
+    assert [p["name"] for p in s["providers"]] == ["anthropic", "openai", "ollama"]
+    assert all(p["configured"] == bool(p["default_model"]) for p in s["providers"])
     assert "medium" in s["efforts"] and s["table_formats"] == ["markdown", "html"]
     assert s["schemas"] == ["invoice", "contract"]
     assert 0 < s["quality_threshold"] < 1

@@ -49,8 +49,9 @@ max_input_tokens = 100000
 max_output_tokens = 16000
 
 [llm.ollama]
-model = ""                       # set once a model is pulled, e.g. "qwen2.5:7b"
+model = "qwen3.5:4b"             # any pulled model; `ollama list` shows them
 base_url = "http://localhost:11434"
+think = false                    # reasoning mode for thinking models: slow on CPU
 num_ctx = 16384                  # Ollama truncates silently beyond this
 max_input_tokens = 10000
 max_output_tokens = 4096
