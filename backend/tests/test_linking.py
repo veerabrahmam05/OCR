@@ -181,6 +181,14 @@ def test_numbers_in_reads_us_and_eu_formats():
     assert {1250.0} <= numbers_in("1,250.00") and {1250.0} <= numbers_in("1.250,00")
 
 
+def test_numbers_in_skips_ids_and_dates_but_keeps_units_and_signs():
+    assert numbers_in("INV-2026-0042") == set()
+    assert numbers_in("Date 12/11/2026") == set()
+    assert 40.0 in numbers_in("40kg of bolts")
+    assert 5.0 in numbers_in("Credit: -5.00")
+    assert 410.0 in numbers_in("Total due: 410.00 USD.")
+
+
 @pytest.mark.parametrize(
     "text", ["2026-11-12", "12/11/2026", "11/12/2026", "12.11.26", "12 Nov 2026", "November 12th, 2026"]
 )
@@ -199,6 +207,13 @@ def test_dates_in_reads_common_formats(text):
         ("Acme Corporation", "Billed to: ACME CORPORATION, 12 Market St", True),
         ("Globex", "Billed to: Acme Corporation", False),
         ("280.00", "Total 280.00 USD", True),
+        # one digit off is a different identifier, however similar the strings are
+        ("INV-2026-0042", "Invoice INV-2026-0043", False),
+        ("INV-2026-0042", "Invoice INV-2026-0042", True),
+        ("12 Market Street", "Billed to: Acme, 13 Market Street", False),
+        ("12 Market Street", "Billed to: Acme, 12 Market Street", True),
+        ("0042", "INV-2026-0042", False),  # part of a token is not the value
+        ("Safety gloves", "Safetygloves 40 3.25", True),  # OCR slip on plain words
         (True, "anything", None),
         (None, "anything", None),
         ({"a": 1}, "anything", None),

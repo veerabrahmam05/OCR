@@ -19,8 +19,13 @@ field is a date.
 when the intended value is unambiguous from context.
 - For every non-null value, add an entry to "sources": "field" is the value's JSON \
 path inside "data" (for example invoice_number or line_items[2].amount), "page" is \
-the page number it came from, and "quote" is a short excerpt copied exactly from \
-that page's text that contains the value.
+the page number it came from, and "quote" is an excerpt copied exactly from that \
+page's text that contains the value with enough context to find it unambiguously:
+  - A labelled value: include the label, e.g. "Invoice date: 12/11/2026", not "12/11/2026".
+  - A table cell: quote the whole table row, e.g. "Steel bolts 200 0.50 100.00", not "200".
+  - When all values of a list item come from one table row, give ONE source for the \
+item (field "line_items[0]"), not one per value.
+  - Never use a bare number or a single word as the quote.
 """
 
 

@@ -15,7 +15,9 @@ from rapidfuzz import fuzz
 
 from ocr_pipeline.linking.text import tokens
 
-_NUMBER = re.compile(r"\d+(?:[.,]\d+)*")
+# A standalone number: not part of a word, an ID chain (INV-2026-0042) or a date
+# (12/11/2026). A unit may follow ("40kg"); a leading minus sign is allowed ("-5.00").
+_NUMBER = re.compile(r"(?<![A-Za-z0-9/])(?<![A-Za-z0-9]-)\d+(?:[.,]\d+)*(?![0-9/]|-\d)")
 _ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _MONTHS = {
     m: i
@@ -100,7 +102,14 @@ def value_in_text(value: Any, text: str) -> bool | None:
         nums = numbers_in(value)
         if nums and numbers_in(text) & nums:
             return True
-    v, t = " ".join(tokens(value)), " ".join(tokens(text))
-    if not v:
+    v_tokens, t_tokens = tokens(value), tokens(text)
+    if not v_tokens:
         return None
+    if any(c.isdigit() for c in value):
+        # IDs, references, postcodes: one wrong digit is a different value, so require
+        # the exact tokens in order (INV-2026-0042 must not match INV-2026-0043).
+        n = len(v_tokens)
+        return any(t_tokens[i : i + n] == v_tokens for i in range(len(t_tokens) - n + 1))
+    v, t = " ".join(v_tokens), " ".join(t_tokens)
+    # Plain words: tolerate OCR slips ("Safetygloves") with a high fuzzy threshold.
     return v in t or fuzz.partial_ratio(v, t) >= 90
