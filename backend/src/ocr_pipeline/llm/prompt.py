@@ -38,12 +38,29 @@ def render_pages(pages: list[PageContent]) -> str:
     return "<document>\n" + "\n".join(parts) + "\n</document>"
 
 
+DATE_HINTS = {
+    "DMY": (
+        "Numeric dates in this document are written day first (DD/MM/YYYY): "
+        "12/11/2026 means 12 November 2026, returned as 2026-11-12."
+    ),
+    "MDY": (
+        "Numeric dates in this document are written month first (MM/DD/YYYY): "
+        "12/11/2026 means 11 December 2026, returned as 2026-12-11."
+    ),
+    "YMD": (
+        "Numeric dates in this document are written year first (YYYY/MM/DD): "
+        "2026/11/12 means 12 November 2026, returned as 2026-11-12."
+    ),
+}
+
+
 def user_prompt(
     pages: list[PageContent],
     instructions: str | None,
     chunk_index: int,
     chunk_count: int,
     free_form: bool,
+    date_order: str = "auto",
 ) -> str:
     sections: list[str] = []
     if chunk_count > 1:
@@ -55,6 +72,8 @@ def user_prompt(
         )
     if instructions:
         sections.append(f"<instructions>\n{instructions.strip()}\n</instructions>")
+    if date_order in DATE_HINTS:
+        sections.append(DATE_HINTS[date_order])
     if free_form:
         sections.append(
             "Return each value the instructions ask for as an entry in data.fields, with a "

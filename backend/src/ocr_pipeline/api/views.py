@@ -74,6 +74,8 @@ class SettingsView(BaseModel):
     table_formats: list[str]
     default_table_format: str
     schemas: list[str]
+    date_orders: list[str]
+    default_date_order: str
     max_upload_mb: float
     page_image_max_dpi: int
 

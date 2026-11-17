@@ -10,7 +10,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from ocr_pipeline.config import Settings
+from ocr_pipeline.config import DateOrder, Settings
 from ocr_pipeline.llm.schema import TargetSchema
 from ocr_pipeline.schemas import BUILTIN_SCHEMAS
 
@@ -32,6 +32,7 @@ class JobOptions(BaseModel):
     effort: Literal["low", "medium", "high", "xhigh", "max"] | None = None  # Claude only
     quality_threshold: float | None = Field(None, ge=0, le=1)
     table_format: Literal["markdown", "html"] | None = None
+    date_order: DateOrder | None = None
 
     @model_validator(mode="after")
     def _check(self) -> JobOptions:
@@ -68,4 +69,6 @@ def apply_options(settings: Settings, opts: JobOptions) -> Settings:
         s.llm.active.model = opts.model
     if opts.effort is not None:
         s.llm.anthropic.effort = opts.effort
+    if opts.date_order is not None:
+        s.documents.date_order = opts.date_order
     return s

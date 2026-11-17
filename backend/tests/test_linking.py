@@ -196,6 +196,26 @@ def test_dates_in_reads_common_formats(text):
     assert date(2026, 11, 12) in dates_in(text)
 
 
+def test_date_order_resolves_ambiguous_dates():
+    assert dates_in("12/11/2026", "DMY") == {date(2026, 11, 12)}
+    assert dates_in("12/11/2026", "MDY") == {date(2026, 12, 11)}
+    assert dates_in("12/11/2026") == {date(2026, 11, 12), date(2026, 12, 11)}
+    assert dates_in("2026/11/12", "YMD") == {date(2026, 11, 12)}
+    # unambiguous forms are unaffected by the order
+    assert dates_in("12 November 2026", "MDY") == {date(2026, 11, 12)}
+    # no phantom dates from digits inside a longer date ("26-11-12" in "2026-11-12")
+    assert dates_in("Issued 2026-11-12") == {date(2026, 11, 12)}
+
+
+def test_swapped_day_and_month_flagged_when_order_known():
+    doc = doc_with(["Invoice date: 12/11/2026"])
+    swapped = result({"invoice_date": "2026-12-11"}, ("invoice_date", 1, "Invoice date: 12/11/2026"))
+    auto = link_sources(doc, swapped, SETTINGS)
+    dmy = link_sources(doc, swapped, SETTINGS, date_order="DMY")
+    assert auto.sources[0].verification.value_found is True  # either reading accepted
+    assert dmy.sources[0].verification.value_found is False  # 12/11 is 12 Nov in DD/MM
+
+
 @pytest.mark.parametrize(
     "value, text, expected",
     [

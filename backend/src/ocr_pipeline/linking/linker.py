@@ -41,6 +41,7 @@ def verify_source(
     data: dict,
     indexes: dict[int, PageIndex],
     settings: LinkingSettings,
+    date_order: str = "auto",
 ) -> SourceVerification:
     field_found, value = resolve(data, source.field)
     found = _locate(tokens(source.quote), source.page, indexes, settings)
@@ -68,17 +69,26 @@ def verify_source(
         boxes=line_boxes(words),
         value=value,
         # Checked against the real page text, not the model's quote.
-        value_found=value_in_text(value, text) if field_found else None,
+        value_found=value_in_text(value, text, date_order) if field_found else None,
     )
 
 
 def link_sources(
-    document: ExtractedDocument, result: ExtractionResult, settings: LinkingSettings
+    document: ExtractedDocument,
+    result: ExtractionResult,
+    settings: LinkingSettings,
+    date_order: str = "auto",
 ) -> ExtractionResult:
-    """Return a copy of ``result`` with every source verified and unsourced fields listed."""
+    """Return a copy of ``result`` with every source verified and unsourced fields listed.
+
+    ``date_order`` ("DMY"/"MDY") makes date checks strict, so a swapped day and month
+    (12/11/2026 read as 11 December in a DD/MM document) is flagged.
+    """
     indexes = {p.page_number: PageIndex.build(p.words) for p in document.pages if p.words}
     sources = [
-        s.model_copy(update={"verification": verify_source(s, result.data, indexes, settings)})
+        s.model_copy(
+            update={"verification": verify_source(s, result.data, indexes, settings, date_order)}
+        )
         for s in result.sources
     ]
     cited = [s.field for s in sources if s.verification.status != SourceStatus.UNKNOWN_FIELD]

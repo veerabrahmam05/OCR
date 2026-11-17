@@ -82,5 +82,6 @@ def extract_from_pdf(
     settings = settings or load_settings()
     document = process_pdf(source, settings, engine)
     provider = provider or create_provider(settings.llm)
-    result = extract(document, provider, schema, instructions, settings.llm.max_retries)
-    return document, link_sources(document, result, settings.linking)
+    date_order = settings.documents.date_order
+    result = extract(document, provider, schema, instructions, settings.llm.max_retries, date_order)
+    return document, link_sources(document, result, settings.linking, date_order)

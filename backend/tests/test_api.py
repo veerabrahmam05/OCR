@@ -44,10 +44,16 @@ class Factory:
     def __init__(self):
         self.replies: list = []
         self.seen = []
+        self.providers: list[FakeProvider] = []
 
     def __call__(self, llm):
         self.seen.append(llm)
-        return FakeProvider(self.replies)  # shares the queue: one reply per LLM call
+        provider = FakeProvider(self.replies)  # shares the queue: one reply per LLM call
+        self.providers.append(provider)
+        return provider
+
+    def prompts(self) -> list[str]:
+        return [c["user"] for p in self.providers for c in p.calls]
 
 
 @pytest.fixture
@@ -99,6 +105,16 @@ def test_settings_for_the_ui(api):
     assert "medium" in s["efforts"] and s["table_formats"] == ["markdown", "html"]
     assert s["schemas"] == ["invoice", "contract"]
     assert 0 < s["quality_threshold"] < 1
+    assert s["date_orders"] == ["auto", "DMY", "MDY", "YMD"]
+    assert s["default_date_order"] in s["date_orders"]
+
+
+def test_date_order_option_reaches_the_prompt(api, invoice_pdf):
+    client, factory = api
+    factory.replies.append(INVOICE_REPLY)
+    job = wait(client, submit(client, invoice_pdf, schema_name="invoice", date_order="MDY").json()["id"])
+    assert job["status"] == "done", job["error"]
+    assert "month first (MM/DD/YYYY)" in factory.prompts()[-1]
 
 
 def test_schemas(api):

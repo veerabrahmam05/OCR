@@ -19,12 +19,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { usePolling } from "@/hooks/use-polling"
 import { api } from "@/lib/api"
-import type { JobOptions, Provider, SettingsView } from "@/lib/types"
+import type { DateOrder, JobOptions, Provider, SettingsView } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 type Mode = "builtin" | "custom" | "instructions"
 
 const PROVIDER_LABEL: Record<Provider, string> = { anthropic: "Claude", openai: "OpenAI", ollama: "Ollama (local)" }
+
+const DATE_ORDER_LABEL: Record<DateOrder, string> = {
+  auto: "Auto (no hint)",
+  DMY: "DD/MM/YYYY",
+  MDY: "MM/DD/YYYY",
+  YMD: "YYYY/MM/DD",
+}
 
 export function UploadForm() {
   const { data: settings, error } = usePolling(api.settings, 0, () => false)
@@ -57,6 +64,7 @@ function Form({ settings }: { settings: SettingsView }) {
   const [effort, setEffort] = useState(settings.default_effort)
   const [threshold, setThreshold] = useState(settings.quality_threshold)
   const [tableFormat, setTableFormat] = useState(settings.default_table_format)
+  const [dateOrder, setDateOrder] = useState<DateOrder>(settings.default_date_order)
 
   const providerInfo = settings.providers.find((p) => p.name === provider)
   const maxBytes = settings.max_upload_mb * 1024 * 1024
@@ -93,6 +101,7 @@ function Form({ settings }: { settings: SettingsView }) {
     }
     if (instructions.trim()) opts.instructions = instructions.trim()
     if (mode === "instructions" && !opts.instructions) return "Write instructions describing what to extract."
+    opts.date_order = dateOrder
     opts.provider = provider
     if (model.trim()) opts.model = model.trim()
     if (provider === "anthropic") opts.effort = effort
@@ -305,6 +314,29 @@ function Form({ settings }: { settings: SettingsView }) {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="flex flex-col gap-1.5 sm:col-span-3">
+              <Label>Dates in document</Label>
+              <Select
+                value={dateOrder}
+                onValueChange={(v) => v && setDateOrder(v as DateOrder)}
+                items={DATE_ORDER_LABEL}
+              >
+                <SelectTrigger className="w-full sm:w-1/3">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {settings.date_orders.map((d) => (
+                    <SelectItem key={d} value={d}>
+                      {DATE_ORDER_LABEL[d]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                How numeric dates are written, e.g. whether 12/11/2026 is 12 November or 11 December. Tells the
+                model and makes the date check strict.
+              </p>
             </div>
             {provider === "ollama" && !providerInfo?.configured && !model.trim() && (
               <p className="text-xs text-destructive sm:col-span-3">

@@ -35,8 +35,9 @@ _MONTHS = {
 _MONTH = "(" + "|".join(sorted(_MONTHS, key=len, reverse=True)) + r")\.?"
 _DAY = r"(\d{1,2})(?:st|nd|rd|th)?"
 _DATE_PATTERNS = [
-    (re.compile(r"(\d{4})-(\d{1,2})-(\d{1,2})"), "ymd"),
-    (re.compile(r"(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{2,4})"), "numeric"),
+    # Digit boundaries: without them "26/11/12" is found inside "2026/11/12".
+    (re.compile(r"(?<!\d)(\d{4})[/.\-](\d{1,2})[/.\-](\d{1,2})(?!\d)"), "ymd"),
+    (re.compile(r"(?<!\d)(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{2,4})(?!\d)"), "numeric"),
     (re.compile(_DAY + r"\s+" + _MONTH + r",?\s+(\d{4})", re.I), "d_mon_y"),
     (re.compile(_MONTH + r"\s+" + _DAY + r",?\s+(\d{4})", re.I), "mon_d_y"),
 ]
@@ -65,16 +66,24 @@ def _safe_date(y: int, m: int, d: int) -> date | None:
         return None
 
 
-def dates_in(text: str) -> set[date]:
+def dates_in(text: str, order: str = "auto") -> set[date]:
+    """Dates written in ``text``. ``order`` ("DMY"/"MDY") resolves 12/11/2026;
+    with "auto" (or "YMD", where such dates are unexpected) both readings count."""
     found: set[date] = set()
     for pattern, kind in _DATE_PATTERNS:
         for m in pattern.finditer(text):
             g = m.groups()
             if kind == "ymd":
                 candidates = [_safe_date(int(g[0]), int(g[1]), int(g[2]))]
-            elif kind == "numeric":  # ambiguous: try day-first and month-first
+            elif kind == "numeric":
                 a, b, y = int(g[0]), int(g[1]), int(g[2])
-                candidates = [_safe_date(y, b, a), _safe_date(y, a, b)]
+                day_first, month_first = _safe_date(y, b, a), _safe_date(y, a, b)
+                if order == "DMY":
+                    candidates = [day_first]
+                elif order == "MDY":
+                    candidates = [month_first]
+                else:
+                    candidates = [day_first, month_first]
             elif kind == "d_mon_y":
                 candidates = [_safe_date(int(g[2]), _MONTHS[g[1].lower()], int(g[0]))]
             else:
@@ -83,7 +92,7 @@ def dates_in(text: str) -> set[date]:
     return found
 
 
-def value_in_text(value: Any, text: str) -> bool | None:
+def value_in_text(value: Any, text: str, date_order: str = "auto") -> bool | None:
     """True/False if ``value`` does/doesn't appear in ``text``; None if not checkable."""
     if value is None or isinstance(value, bool) or isinstance(value, (dict, list)):
         return None
@@ -94,7 +103,7 @@ def value_in_text(value: Any, text: str) -> bool | None:
         return None
     if _ISO_DATE.match(value):
         try:
-            if date.fromisoformat(value) in dates_in(text):
+            if date.fromisoformat(value) in dates_in(text, date_order):
                 return True
         except ValueError:
             pass

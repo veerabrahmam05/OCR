@@ -14,7 +14,13 @@ from pydantic import ValidationError
 from ocr_pipeline.api.jobs import PDF_LOCK, JobManager, JobStoreFull, ProviderFactory
 from ocr_pipeline.api.options import JobOptions
 from ocr_pipeline.api.views import JobDetail, JobSummary, ProviderInfo, SchemaInfo, SettingsView
-from ocr_pipeline.config import AnthropicSettings, ExtractionSettings, Settings, load_settings
+from ocr_pipeline.config import (
+    AnthropicSettings,
+    DateOrder,
+    ExtractionSettings,
+    Settings,
+    load_settings,
+)
 from ocr_pipeline.extract import OcrEngine
 from ocr_pipeline.llm import create_provider
 from ocr_pipeline.schemas import BUILTIN_SCHEMAS
@@ -66,6 +72,8 @@ def create_app(
             table_formats=list(get_args(ExtractionSettings.model_fields["table_format"].annotation)),
             default_table_format=settings.extraction.table_format,
             schemas=list(BUILTIN_SCHEMAS),
+            date_orders=list(get_args(DateOrder)),
+            default_date_order=settings.documents.date_order,
             max_upload_mb=settings.api.max_upload_mb,
             page_image_max_dpi=settings.api.page_image_max_dpi,
         )

@@ -61,6 +61,10 @@ max_output_tokens = 4096
 fuzzy_threshold = 0.85           # min similarity for a non-exact quote match (OCR noise)
 search_other_pages = true        # look for a quote on other pages if not on the cited one
 
+# Conventions of your documents (UI-selectable per job).
+[documents]
+date_order = "DMY"               # DMY = 12/11/2026 is 12 Nov | MDY = 11 Dec | YMD | auto (no hint)
+
 # HTTP API (uv run uvicorn ocr_pipeline.api.app:app). Jobs are kept in memory only.
 [api]
 cors_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]   # Next.js dev server

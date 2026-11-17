@@ -158,15 +158,17 @@ class JobManager:
             if job.options.extract_data:
                 job.set_status(JobStatus.EXTRACTING_DATA)
                 provider = self.provider_factory(job.settings.llm)
+                date_order = job.settings.documents.date_order
                 result = extract(
                     job.document,
                     provider,
                     job.options.target_schema(),
                     job.options.instructions,
                     job.settings.llm.max_retries,
+                    date_order,
                 )
                 job.set_status(JobStatus.LINKING)
-                job.result = link_sources(job.document, result, job.settings.linking)
+                job.result = link_sources(job.document, result, job.settings.linking, date_order)
             job.set_status(JobStatus.DONE)
         except Exception as e:  # report any failure on the job instead of losing it
             log.exception("job %s failed", job.id)

@@ -97,7 +97,10 @@ export interface JobOptions {
   effort?: string | null
   quality_threshold?: number | null
   table_format?: "markdown" | "html" | null
+  date_order?: DateOrder | null
 }
+
+export type DateOrder = "auto" | "DMY" | "MDY" | "YMD"
 
 export interface JobSummary {
   id: string
@@ -130,6 +133,8 @@ export interface SettingsView {
   table_formats: ("markdown" | "html")[]
   default_table_format: "markdown" | "html"
   schemas: string[]
+  date_orders: DateOrder[]
+  default_date_order: DateOrder
   max_upload_mb: number
   page_image_max_dpi: number
 }

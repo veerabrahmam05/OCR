@@ -104,8 +104,12 @@ def extract(
     schema: type[BaseModel] | dict | None = None,
     instructions: str | None = None,
     max_retries: int = 1,
+    date_order: str = "auto",
 ) -> ExtractionResult:
-    """Extract data from ``document`` per ``schema`` and/or free-text ``instructions``."""
+    """Extract data from ``document`` per ``schema`` and/or free-text ``instructions``.
+
+    ``date_order`` ("DMY"/"MDY"/"YMD") tells the model how numeric dates are written.
+    """
     if schema is None and not (instructions and instructions.strip()):
         raise ValueError("give a schema, instructions, or both")
 
@@ -133,7 +137,7 @@ def extract(
 
     for i, chunk in enumerate(chunks):
         page_numbers = [p.page_number for p in chunk]
-        prompt = user_prompt(chunk, instructions, i, len(chunks), free_form)
+        prompt = user_prompt(chunk, instructions, i, len(chunks), free_form, date_order)
         attempt_prompt = prompt
         for attempt in range(max_retries + 1):
             try:

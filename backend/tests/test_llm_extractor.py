@@ -69,6 +69,22 @@ def test_instructions_only_uses_free_form_fields():
     assert "data.fields" in provider.calls[0]["user"]
 
 
+@pytest.mark.parametrize(
+    "order, expected",
+    [("DMY", "day first (DD/MM/YYYY)"), ("MDY", "month first (MM/DD/YYYY)"), ("YMD", "year first")],
+)
+def test_date_order_hint_in_prompt(order, expected):
+    provider = FakeProvider([invoice_reply()])
+    extract(make_document([PAGE1]), provider, Invoice, date_order=order)
+    assert expected in provider.calls[0]["user"]
+
+
+def test_no_date_hint_when_auto():
+    provider = FakeProvider([invoice_reply()])
+    extract(make_document([PAGE1]), provider, Invoice)
+    assert "Numeric dates" not in provider.calls[0]["user"]
+
+
 def test_schema_or_instructions_required():
     with pytest.raises(ValueError):
         extract(make_document([PAGE1]), FakeProvider([]))

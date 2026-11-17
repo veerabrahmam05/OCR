@@ -145,6 +145,18 @@ class LinkingSettings(BaseModel):
     search_other_pages: bool = True
 
 
+DateOrder = Literal["auto", "DMY", "MDY", "YMD"]
+
+
+class DocumentSettings(BaseModel):
+    """Conventions of the documents being processed."""
+
+    # How numeric dates are written. "DMY": 12/11/2026 is 12 November; "MDY": 11 December.
+    # Told to the LLM and used when checking extracted dates against the page.
+    # "auto" gives no hint and accepts either reading.
+    date_order: DateOrder = "auto"
+
+
 class ApiSettings(BaseModel):
     """HTTP API options. Job results live in memory only and are lost on restart."""
 
@@ -166,6 +178,7 @@ class Settings(BaseModel):
     extraction: ExtractionSettings = Field(default_factory=ExtractionSettings)
     llm: LLMSettings = Field(default_factory=LLMSettings)
     linking: LinkingSettings = Field(default_factory=LinkingSettings)
+    documents: DocumentSettings = Field(default_factory=DocumentSettings)
     api: ApiSettings = Field(default_factory=ApiSettings)
 
 
