@@ -91,7 +91,8 @@ export function JobView({ params }: { params: Promise<{ id: string }> }) {
 
           <Card>
             <CardContent>
-              <Tabs defaultValue="data">
+              {/* Text-only jobs have no data: open where their output is. */}
+              <Tabs defaultValue={job.options.extract_data ? "data" : "markdown"}>
                 <TabsList>
                   <TabsTrigger value="data">Data</TabsTrigger>
                   <TabsTrigger value="markdown">Page text</TabsTrigger>
@@ -117,7 +118,11 @@ export function JobView({ params }: { params: Promise<{ id: string }> }) {
                   )}
                 </TabsContent>
 
-                <TabsContent value="markdown" className="pt-3">
+                <TabsContent value="markdown" className="flex flex-col gap-2 pt-3">
+                  <p className="text-xs text-muted-foreground">
+                    Text of page {current?.page_number ?? page} as Markdown (use the page buttons on the left to
+                    switch pages).
+                  </p>
                   <ScrollArea className="h-[70vh] rounded-lg border bg-muted/30">
                     <pre className="p-3 font-mono text-xs whitespace-pre-wrap">
                       {current?.markdown.trim() || "(no text on this page)"}

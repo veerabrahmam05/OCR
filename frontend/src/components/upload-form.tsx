@@ -118,6 +118,12 @@ function Form({ settings }: { settings: SettingsView }) {
     setSubmitting(true)
     try {
       const job = await api.createJob(file, opts)
+      // Next.js (Cache Components) keeps this page's state when navigating away and back
+      // (React <Activity>), so reset the upload now or "New extraction" would return to a
+      // stuck "Uploading..." button. The other options are kept on purpose.
+      setFile(null)
+      if (inputRef.current) inputRef.current.value = ""
+      setSubmitting(false)
       router.push(`/jobs/${job.id}`)
     } catch (e) {
       toast.error((e as Error).message)
@@ -202,7 +208,8 @@ function Form({ settings }: { settings: SettingsView }) {
           </div>
           {!extractData && (
             <p className="text-sm text-muted-foreground">
-              Text only: classify pages, run OCR where needed and return Markdown. No LLM call, no API key needed.
+              Text only: classify pages, run OCR where needed and show each page&apos;s text (Markdown). No fields
+              are extracted, no LLM call is made. Turn this on to extract invoice data.
             </p>
           )}
           {extractData && (
