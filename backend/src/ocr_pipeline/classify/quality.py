@@ -137,6 +137,13 @@ def collect_signals(page: pymupdf.Page, settings: ClassifierSettings) -> PageSig
     ):
         model_prob = _ocr_model_probability(blocks, page)
 
+    # Nothing extractable at all: look at the rendered page before calling it empty.
+    # Content can live where extraction does not see it (annotation appearances,
+    # patterns, shadings) while still being printed on the page.
+    ink = None
+    if char_count == 0 and not image_rects and not curve_vectors:
+        ink = ink_ratio(page)
+
     return PageSignals(
         char_count=char_count,
         ocr_char_count=ocr_char_count,
@@ -147,7 +154,19 @@ def collect_signals(page: pymupdf.Page, settings: ClassifierSettings) -> PageSig
         curve_vector_count=curve_vectors,
         has_ocr_layer=has_ocr_layer,
         ocr_model_probability=model_prob,
+        ink_ratio=ink,
     )
+
+
+INK_DPI = 36  # low resolution is enough to tell blank from printed
+INK_LEVEL = 200  # gray value below which a pixel counts as ink
+
+
+def ink_ratio(page: pymupdf.Page) -> float:
+    """Fraction of non-white pixels when the page (with annotations) is rendered."""
+    pix = page.get_pixmap(dpi=INK_DPI, colorspace=pymupdf.csGRAY, annots=True)
+    gray = np.frombuffer(pix.samples, dtype=np.uint8)
+    return float((gray < INK_LEVEL).mean()) if gray.size else 0.0
 
 
 def quality_score(

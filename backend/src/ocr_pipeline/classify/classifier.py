@@ -39,10 +39,13 @@ def decide(
             signals=signals,
         )
 
-    # 1. No text at all: a scan if anything is drawn, else blank.
+    # 1. No text at all: a scan if anything is drawn or printed, else blank.
     if signals.char_count == 0:
         if signals.image_coverage > 0 or signals.curve_vector_count > 0:
             return result(PageType.SCANNED, True, Reason.NO_TEXT_LAYER)
+        if (signals.ink_ratio or 0) > settings.empty_max_ink:
+            # Visible, but not extractable: OCR the rendered page.
+            return result(PageType.SCANNED, True, Reason.UNEXTRACTABLE_CONTENT)
         return result(PageType.EMPTY, False, Reason.EMPTY_PAGE)
 
     # 2. A big image with only a little real text (e.g. a stamp or Bates number).

@@ -17,6 +17,7 @@ from pdf_builders import (
     add_digital_invoice,
     add_scanned,
     draw_invoice,
+    draw_text_as_rectangles,
     gibberish,
 )
 
@@ -170,6 +171,17 @@ def test_source_file_is_not_modified(tmp_path, mixed_pdf, settings):
     path.write_bytes(mixed_pdf)
     process_pdf(path, settings)
     assert path.read_bytes() == mixed_pdf
+
+
+def test_text_drawn_as_rectangles_is_recovered_by_ocr(settings):
+    with pymupdf.open() as d:
+        draw_text_as_rectangles(d.new_page(), ["Invoice DE52660", "Invoice total USD 866.38"])
+        result = process_pdf(d.tobytes(), settings)
+    p = result.pages[0]
+    assert p.method == ExtractionMethod.OCR
+    md = _norm(p.markdown)
+    assert "de52660" in md and "866.38" in md
+    assert p.words  # positions available for source highlighting
 
 
 def test_ocr_keeps_the_page_image(settings):

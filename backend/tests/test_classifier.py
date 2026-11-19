@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pymupdf
 import pytest
-from pdf_builders import ENGLISH, add_digital, add_scanned
+from pdf_builders import ENGLISH, add_digital, add_scanned, draw_text_as_rectangles
 from pdf_builders import gibberish as _gibberish
 
 from ocr_pipeline.classify import classify_document, classify_page, decide
@@ -52,6 +52,21 @@ def test_blank_page_is_empty(doc, settings):
     assert c.page_type == PageType.EMPTY
     assert c.reason == Reason.EMPTY_PAGE
     assert not c.needs_ocr
+    assert c.signals.ink_ratio == 0
+
+
+def test_printed_but_unextractable_page_is_ocred_not_empty(doc, settings):
+    # Text drawn as rectangle runs: no text, images or curves to extract, yet clearly
+    # printed. Such a page must be OCRed, not thrown away as "empty".
+    page = doc.new_page()
+    draw_text_as_rectangles(page, ENGLISH[:3])
+    c = classify_page(page, settings)
+    assert c.signals.char_count == 0
+    assert c.signals.image_coverage == 0 and c.signals.curve_vector_count == 0
+    assert c.signals.ink_ratio and c.signals.ink_ratio > settings.empty_max_ink
+    assert c.page_type == PageType.SCANNED
+    assert c.reason == Reason.UNEXTRACTABLE_CONTENT
+    assert c.needs_ocr
 
 
 def test_digital_page_with_garbage_text_layer_needs_ocr(doc, settings):

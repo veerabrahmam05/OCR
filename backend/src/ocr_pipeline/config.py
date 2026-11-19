@@ -47,6 +47,10 @@ class ClassifierSettings(BaseModel):
     # characters than image_dominant_max_chars, means "scan with a small stamp".
     image_dominant_coverage: float = Field(0.6, ge=0, le=1)
     image_dominant_max_chars: int = Field(200, ge=0)
+    # A page with nothing extractable is "empty" only if at most this share of it is
+    # printed on when rendered; above it, the page is OCRed (content is hidden from
+    # extraction, e.g. in annotations). 0.002 = 0.2% of pixels.
+    empty_max_ink: float = Field(0.002, ge=0, le=1)
     # Fraction of characters that must be invisible/OCR text to call it an OCR layer.
     ocr_layer_min_fraction: float = Field(0.8, ge=0, le=1)
     # Below this many words the dictionary ratio is too noisy and is skipped.

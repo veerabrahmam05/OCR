@@ -65,6 +65,37 @@ def draw_invoice(page: pymupdf.Page, ruled: bool = True) -> None:
     page.insert_text((60, top + len(TABLE_ROWS) * rh + 30), "Total due: 410.00 USD", fontsize=10)
 
 
+def draw_text_as_rectangles(page: pymupdf.Page, lines: list[str], fontsize: float = 16) -> None:
+    """Draw text as runs of tiny filled rectangles, one drawing per run.
+
+    Mimics generators that rasterise a page into vector rectangles: it prints like
+    text, but has no text, no images and no curves for extraction to find.
+    """
+    import numpy as np
+
+    dpi = 100
+    with pymupdf.open() as tmp:
+        t = tmp.new_page(width=page.rect.width, height=page.rect.height)
+        y = 60 + fontsize
+        for line in lines:
+            t.insert_text((50, y), line, fontsize=fontsize)
+            y += fontsize * 1.6
+        pix = t.get_pixmap(dpi=dpi, colorspace=pymupdf.csGRAY)
+    dark = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width) < 128
+    scale = 72 / dpi
+    for row in range(pix.height):
+        cols = np.flatnonzero(dark[row])
+        if not cols.size:
+            continue
+        # split the dark pixels of this row into contiguous runs
+        breaks = np.flatnonzero(np.diff(cols) > 1)
+        starts = np.concatenate(([cols[0]], cols[breaks + 1]))
+        ends = np.concatenate((cols[breaks], [cols[-1]]))
+        for x0, x1 in zip(starts, ends, strict=True):
+            r = pymupdf.Rect(x0 * scale, row * scale, (x1 + 1) * scale, (row + 1) * scale)
+            page.draw_rect(r, color=None, fill=(0, 0, 0), width=0)
+
+
 def add_digital(doc: pymupdf.Document, lines: list[str] = ENGLISH) -> None:
     write_lines(doc.new_page(), lines)
 

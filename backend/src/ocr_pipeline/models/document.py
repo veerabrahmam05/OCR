@@ -16,6 +16,8 @@ class PageType(StrEnum):
 class ClassificationReason(StrEnum):
     EMPTY_PAGE = "empty_page"
     NO_TEXT_LAYER = "no_text_layer"
+    # Printed content that text/image extraction cannot see (e.g. in annotations).
+    UNEXTRACTABLE_CONTENT = "unextractable_content"
     IMAGE_DOMINANT_SPARSE_TEXT = "image_dominant_sparse_text"
     TEXT_LAYER_OK = "text_layer_ok"
     TEXT_LAYER_LOW_QUALITY = "text_layer_low_quality"
@@ -35,6 +37,9 @@ class PageSignals(BaseModel):
     curve_vector_count: int = Field(ge=0)  # non-rectangle drawings (outlined glyphs?)
     has_ocr_layer: bool
     ocr_model_probability: float | None = Field(default=None, ge=0, le=1)
+    # Share of the rendered page that is printed on; measured only when nothing at all
+    # could be extracted (no text, images or drawings).
+    ink_ratio: float | None = Field(default=None, ge=0, le=1)
 
     @property
     def visible_char_count(self) -> int:

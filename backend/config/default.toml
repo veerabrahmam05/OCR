@@ -8,6 +8,7 @@ quality_threshold = 0.6          # below this, a page's text layer is re-OCRed (
 image_dominant_coverage = 0.6    # image covers >= 60% of the page ...
 image_dominant_max_chars = 200   # ... with < 200 visible chars -> treat as scanned
 ocr_layer_min_fraction = 0.8     # >= 80% invisible/GlyphLessFont text -> existing OCR layer
+empty_max_ink = 0.002            # no extractable content but > 0.2% printed -> OCR it, not "empty"
 min_words_for_dictionary = 5
 bad_char_penalty = 5.0
 max_bad_char_ratio = 0.1         # > 10% broken chars (U+FFFD etc.) -> always re-OCR
